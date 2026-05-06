@@ -65,8 +65,8 @@ async function blurCommand(sock, chatId, message, quotedMessage) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363404284793169@newsletter',
-                    newsletterName: 'Queen Riam',
+                    newsletterJid: '201060715493@newsletter',
+                    newsletterName: 'ii324BOT',
                     serverMessageId: -1
                 }
             }
