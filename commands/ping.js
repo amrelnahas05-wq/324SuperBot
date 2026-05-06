@@ -33,7 +33,7 @@ async function pingCommand(sock, chatId, message) {
         const response =
             `*Pong!* 🏓\n` +
             `*Response Speed:* *${latency}* seconds\n\n` +
-            `*💻 ${settings.botName || "Queen Riam"}* Server Info\n` +
+            `*💻 ${settings.botName || 'ii324BOT'}* Server Info\n` +
             `RAM Usage: *${ramUsage}*\n` +
             `CPU Cores: *${cpus.length}*\n` +
             `CPU Speed: *${(cpu.speed / cpus.length).toFixed(2)} MHz*`;
@@ -41,7 +41,7 @@ async function pingCommand(sock, chatId, message) {
         if (isButtonModeOn()) {
             await sendButtonMessage(sock, chatId, {
                 text: response,
-                footer: `${settings.botName || "Queen Riam"} 👑`,
+                footer: `${settings.botName || 'ii324BOT'} 👑`,
                 buttons: [
                     { id: '.alive', text: '🤖 Alive Status' },
                 ],
@@ -52,8 +52,8 @@ async function pingCommand(sock, chatId, message) {
                     forwardingScore: 999,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: "120363404284793169@newsletter",
-                        newsletterName: settings.botName || "Queen Riam",
+                        newsletterJid: "201060715493@newsletter",
+                        newsletterName: settings.botName || 'ii324BOT',
                         serverMessageId: -1
                     }
                 }
