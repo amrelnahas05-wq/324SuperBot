@@ -36,7 +36,7 @@ const CATEGORIES = {
     download: {
         emoji: '📥',
         title: 'Download',
-        commands: ['.play', '.song', '.video', '.instagram', '.facebook', '.tiktok', '.snapchat', '.twitter', '.pinterest', '.xnxx'],
+        commands: ['.play', '.song', '.video', '.instagram', '.facebook', '.tiktok', '.snapchat', '.twitter', '.pinterest],
     },
     fun: {
         emoji: '🎯',
