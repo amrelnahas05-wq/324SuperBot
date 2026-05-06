@@ -1,6 +1,4 @@
 const settings = require('../settings');
-const fs = require('fs');
-const path = require('path');
 const { isButtonModeOn } = require('../lib/buttonHelper');
 const getFakeVcard = require('../lib/fakeVcard');
 let sendButtons;
@@ -36,7 +34,7 @@ const CATEGORIES = {
     download: {
         emoji: '📥',
         title: 'Download',
-        commands: ['.play', '.song', '.video', '.instagram', '.facebook', '.tiktok', '.snapchat', '.twitter', '.pinterest],
+        commands: ['.play', '.song', '.video', '.instagram', '.facebook', '.tiktok', '.snapchat', '.twitter', '.pinterest'],
     },
     fun: {
         emoji: '🎯',
@@ -69,9 +67,9 @@ const CATEGORIES = {
         commands: ['.sticker', '.simage', '.blur', '.removebg', '.wanted', '.meme', '.take', '.emojimix', '.tgsticker', '.attp', '.wallpaper'],
     },
     religion: {
-        emoji: '✝️',
+        emoji: '☪️',
         title: 'Religion',
-        commands: ['.quran', '.catholic'],
+        commands: ['.quran'],
     },
     tools: {
         emoji: '💻',
@@ -97,7 +95,7 @@ function getHeader() {
     const uptimeFormatted = formatTime(process.uptime());
     const botMode = settings.commandMode === 'public' ? 'public' : 'private';
 
-    return `*『 👑 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼 』*
+    return `*『 🤖 𝚒𝚒𝟹𝟸𝟺𝙱𝙾𝚃 』*
 *│ 👤 ᴏᴡɴᴇʀ     : ${settings.botOwner}*
 *│ 🌍 ᴍᴏᴅᴇ      : [ ${botMode} ]*
 *│ ⏰ ᴛɪᴍᴇ      : ${currentTime}*
@@ -126,7 +124,7 @@ function buildFullMenu() {
     for (const key of Object.keys(CATEGORIES)) {
         text += '\n' + buildCategoryText(key) + '\n';
     }
-    text += '\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼*';
+    text += '\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚒𝚒𝟹𝟸𝟺𝙱𝙾𝚃*';
     return text;
 }
 
@@ -135,75 +133,32 @@ const channelCtx = {
     isForwarded: true,
     forwardedNewsletterMessageInfo: {
         newsletterJid: '120363404284793169@newsletter',
-        newsletterName: '👑 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼',
+        newsletterName: '🤖 𝚒𝚒𝟹𝟸𝟺𝙱𝙾𝚃',
         serverMessageId: -1,
     },
 };
 
-async function sendMenuAudio(sock, chatId, message) {
-    const audioPath1 = path.join(__dirname, '../media/menu.mp3');
-    const audioPath2 = path.join(__dirname, '../media/menu2.mp3');
-    const tracks = [audioPath1, audioPath2];
-    const chosenTrack = tracks[Math.floor(Math.random() * tracks.length)];
-
-    if (fs.existsSync(chosenTrack)) {
-        const audioBuffer = fs.readFileSync(chosenTrack);
-        await sock.sendMessage(chatId, {
-            audio: audioBuffer,
-            mimetype: 'audio/mpeg',
-            fileName: 'menu.mp3',
-            ptt: false,
-        }, { quoted: getFakeVcard() });
-    }
-}
-
-async function sendWithImage(sock, chatId, text, message) {
-    const imagePath = path.join(__dirname, '../media/riam.jpg');
-    if (fs.existsSync(imagePath)) {
-        const imageBuffer = fs.readFileSync(imagePath);
-        await sock.sendMessage(chatId, {
-            image: imageBuffer,
-            caption: text,
-            contextInfo: channelCtx,
-        }, { quoted: getFakeVcard() });
-    } else {
-        await sock.sendMessage(chatId, {
-            text,
-            contextInfo: channelCtx,
-        }, { quoted: getFakeVcard() });
-    }
-}
-
-function loadMenuImage() {
-    const imagePath = path.join(__dirname, '../media/riam.jpg');
-    if (fs.existsSync(imagePath)) return fs.readFileSync(imagePath);
-    return null;
-}
-
 async function helpCommand(sock, chatId, message, _, subCategory) {
-    const menuImage = loadMenuImage();
-
     if (subCategory && CATEGORIES[subCategory]) {
-        const catText = buildCategoryText(subCategory) + '\n\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼*';
+        const catText = buildCategoryText(subCategory) + '\n\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚒𝚒𝟹𝟸𝟺𝙱𝙾𝚃*';
 
         if (isButtonModeOn() && sendButtons) {
             try {
                 const opts = {
                     text: catText,
-                    footer: '© Queen Riam',
+                    footer: '© ii324BOT',
                     buttons: [
                         { id: '.help', text: '🔙 Back to Menu' },
                     ],
                     quoted: getFakeVcard(),
                     contextInfo: channelCtx,
                 };
-                if (menuImage) opts.image = menuImage;
                 await sendButtons(sock, chatId, opts);
             } catch (_) {
-                await sendWithImage(sock, chatId, catText, message);
+                await sock.sendMessage(chatId, { text: catText, contextInfo: channelCtx }, { quoted: getFakeVcard() });
             }
         } else {
-            await sendWithImage(sock, chatId, catText, message);
+            await sock.sendMessage(chatId, { text: catText, contextInfo: channelCtx }, { quoted: getFakeVcard() });
         }
         return;
     }
@@ -219,15 +174,12 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
 
             const opts = {
                 text: menuText,
-                footer: '© Queen Riam',
+                footer: '© ii324BOT',
                 buttons,
                 quoted: getFakeVcard(),
                 contextInfo: channelCtx,
             };
-            if (menuImage) opts.image = menuImage;
             await sendButtons(sock, chatId, opts);
-
-            await sendMenuAudio(sock, chatId, message);
             return;
         } catch (err) {
             console.error('[HELP] Button menu failed, falling back to full menu:', err.message);
@@ -237,8 +189,7 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
     const fullMenu = buildFullMenu();
 
     try {
-        await sendWithImage(sock, chatId, fullMenu, message);
-        await sendMenuAudio(sock, chatId, message);
+        await sock.sendMessage(chatId, { text: fullMenu, contextInfo: channelCtx }, { quoted: getFakeVcard() });
     } catch (error) {
         console.error('Error in help command:', error);
         await sock.sendMessage(chatId, { text: fullMenu }, { quoted: getFakeVcard() });
