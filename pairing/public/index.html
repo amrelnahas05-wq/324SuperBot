@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>324-servant-Bot | Session Pairing</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d0d0d;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 40px 36px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 2.4rem;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #25d366;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .steps {
+      text-align: left;
+      background: #111;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      font-size: 0.88rem;
+      color: #aaa;
+      line-height: 1.9;
+    }
+
+    .steps b { color: #ddd; }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #111;
+      color: #f0f0f0;
+      font-size: 1rem;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus { border-color: #25d366; }
+    input::placeholder { color: #555; }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #25d366;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #1ebe57; }
+    button:disabled { background: #1a5c33; color: #555; cursor: not-allowed; }
+
+    .code-box {
+      margin-top: 28px;
+      background: #111;
+      border: 1px solid #25d366;
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+    }
+
+    .code-box .label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .code-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 6px;
+      color: #25d366;
+      margin-bottom: 10px;
+      font-family: monospace;
+    }
+
+    .code-hint {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    .session-box {
+      margin-top: 28px;
+      background: #111;
+      border: 1px solid #ffd700;
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+    }
+
+    .session-box .label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .session-value {
+      font-size: 0.72rem;
+      color: #ffd700;
+      word-break: break-all;
+      font-family: monospace;
+      line-height: 1.6;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #0d0d0d;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .copy-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.88rem;
+      width: auto;
+    }
+
+    .copy-btn:hover { background: #e5c200; }
+
+    .error { color: #ff4c4c; font-size: 0.88rem; margin-top: 12px; }
+    .spinner { display: none; margin-top: 12px; color: #888; font-size: 0.88rem; }
+
+    .github-link {
+      margin-top: 28px;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .github-link a { color: #888; text-decoration: none; }
+    .github-link a:hover { color: #ddd; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🤖</div>
+    <h1>324-servant-Bot</h1>
+    <p class="subtitle">Generate your SESSION_ID to connect<br/>your WhatsApp account to the bot.</p>
+
+    <div class="steps">
+      <b>How it works:</b><br/>
+      1. Enter your WhatsApp number below<br/>
+      2. You'll receive an 8-digit pairing code<br/>
+      3. Open WhatsApp → Linked Devices → Link a Device<br/>
+      4. Tap <b>"Link with phone number"</b> and enter the code<br/>
+      5. Your SESSION_ID will appear — copy and save it
+    </div>
+
+    <input type="tel" id="phoneInput" placeholder="Phone number with country code (e.g. 201060715493)" />
+    <button id="pairBtn" onclick="startPairing()">Get Pairing Code</button>
+
+    <p class="error" id="errorMsg"></p>
+    <p class="spinner" id="spinner">⏳ Waiting for you to enter the code in WhatsApp...</p>
+
+    <div class="code-box" id="codeBox">
+      <div class="label">Enter this code in WhatsApp → Linked Devices</div>
+      <div class="code-value" id="codeValue">----</div>
+      <div class="code-hint">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Link with phone number</div>
+    </div>
+
+    <div class="session-box" id="sessionBox">
+      <div class="label">✅ Paired successfully! Copy your SESSION_ID below:</div>
+      <div class="session-value" id="sessionValue"></div>
+      <button class="copy-btn" onclick="copySession()">📋 Copy SESSION_ID</button>
+    </div>
+
+    <div class="github-link">
+      <a href="https://github.com/amrelnahas05-wq/324SuperBot" target="_blank">github.com/amrelnahas05-wq/324SuperBot</a>
+    </div>
+  </div>
+
+  <script>
+    let currentPhone = '';
+    let pollInterval = null;
+
+    async function startPairing() {
+      const phone = document.getElementById('phoneInput').value.trim();
+      const errorEl = document.getElementById('errorMsg');
+      const btn = document.getElementById('pairBtn');
+
+      errorEl.textContent = '';
+      if (!phone) { errorEl.textContent = 'Please enter your phone number.'; return; }
+
+      currentPhone = phone.replace(/[^0-9]/g, '');
+      btn.disabled = true;
+      btn.textContent = 'Requesting code...';
+
+      try {
+        const res = await fetch('/pair', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'Something went wrong.';
+          btn.disabled = false;
+          btn.textContent = 'Get Pairing Code';
+          return;
+        }
+
+        document.getElementById('codeValue').textContent = data.code;
+        document.getElementById('codeBox').style.display = 'block';
+        document.getElementById('spinner').style.display = 'block';
+        btn.textContent = 'Code sent — check WhatsApp';
+
+        pollInterval = setInterval(pollSession, 3000);
+      } catch (e) {
+        errorEl.textContent = 'Network error. Is the server running?';
+        btn.disabled = false;
+        btn.textContent = 'Get Pairing Code';
+      }
+    }
+
+    async function pollSession() {
+      try {
+        const res = await fetch(`/session/${currentPhone}`);
+        const data = await res.json();
+
+        if (data.status === 'ready') {
+          clearInterval(pollInterval);
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('sessionValue').textContent = data.sessionId;
+          document.getElementById('sessionBox').style.display = 'block';
+        }
+      } catch (e) {}
+    }
+
+    function copySession() {
+      const text = document.getElementById('sessionValue').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy SESSION_ID'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
