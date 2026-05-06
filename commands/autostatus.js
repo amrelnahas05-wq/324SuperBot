@@ -6,8 +6,8 @@ const channelInfo = {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363404284793169@newsletter',
-            newsletterName: 'Queen Riam',
+            newsletterJid: '201060715493@newsletter',
+            newsletterName: 'ii324BOT',
             serverMessageId: -1
         }
     }
@@ -74,7 +74,7 @@ async function autoStatusCommand(sock, chatId, msg, args) {
             if (isButtonModeOn()) {
                 await sendButtonMessage(sock, chatId, {
                     text,
-                    footer: 'Queen Riam 👑',
+                    footer: 'ii324BOT',
                     buttons: [
                         { id: '.autoviewstatus on',  text: '✅ Enable'  },
                         { id: '.autoviewstatus off', text: '❌ Disable' },
