@@ -71,7 +71,7 @@ const CATEGORIES = {
     religion: {
         emoji: '✝️',
         title: 'Religion',
-        commands: ['.bible', '.quran', '.catholic'],
+        commands: ['.quran', '.catholic'],
     },
     tools: {
         emoji: '💻',
