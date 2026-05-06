@@ -1,0 +1,15 @@
+{
+  "name": "324superbot-pairing",
+  "version": "1.0.0",
+  "description": "Session ID pairing server for 324-servant-Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "v7.0.0-rc.9",
+    "express": "^4.19.2",
+    "pino": "^8.21.0",
+    "qrcode": "^1.5.4"
+  }
+}
