@@ -22,4 +22,4 @@ RUN mkdir -p tmp session data
 ENV PORT=1000
 EXPOSE 1000
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "node restore-session.js && node index.js"]
