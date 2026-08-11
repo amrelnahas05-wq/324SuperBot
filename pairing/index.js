@@ -54,16 +54,39 @@ app.post('/pair', async (req, res) => {
             browser: ['324-servant-Bot', 'Chrome', '1.0.0'],
         });
 
-        if (!sock.authState.creds.registered) {
-            const code = await sock.requestPairingCode(cleaned);
-            const formatted = code.match(/.{1,4}/g).join('-');
-
+        if (!state.creds.registered) {
             sessions.set(cleaned, { sock, saveCreds, sessionDir, ready: false, sessionId: null });
-
             sock.ev.on('creds.update', saveCreds);
 
+            // Baileys may not have completed its initial handshake immediately
+            // after makeWASocket(). Calling requestPairingCode() too early can
+            // make WhatsApp close the socket before a code is returned. The qr
+            // update is emitted when the socket is ready, even in pairing mode.
+            let pairingCodeRequested = false;
+            let pairingCodeResolve;
+            let pairingCodeReject;
+            const pairingCodePromise = new Promise((resolve, reject) => {
+                pairingCodeResolve = resolve;
+                pairingCodeReject = reject;
+            });
+            const pairingTimeout = setTimeout(() => {
+                pairingCodeReject(new Error('Timed out waiting for WhatsApp connection'));
+            }, 30000);
+
             sock.ev.on('connection.update', async (update) => {
-                const { connection, lastDisconnect } = update;
+                const { connection, qr, lastDisconnect } = update;
+
+                if (qr && !pairingCodeRequested) {
+                    pairingCodeRequested = true;
+                    try {
+                        const code = await sock.requestPairingCode(cleaned);
+                        clearTimeout(pairingTimeout);
+                        pairingCodeResolve(code);
+                    } catch (err) {
+                        clearTimeout(pairingTimeout);
+                        pairingCodeReject(err);
+                    }
+                }
 
                 if (connection === 'open') {
                     await saveCreds();
@@ -79,14 +102,15 @@ app.post('/pair', async (req, res) => {
                     sock.end();
                 }
 
-                if (connection === 'close') {
+                if (connection === 'close' && !pairingCodeRequested) {
                     const reason = lastDisconnect?.error?.output?.statusCode;
-                    if (reason !== DisconnectReason.loggedOut) {
-                        // cleanup
-                    }
+                    clearTimeout(pairingTimeout);
+                    pairingCodeReject(new Error(`WhatsApp connection closed${reason ? ` (${reason})` : ''}`));
                 }
             });
 
+            const code = await pairingCodePromise;
+            const formatted = code.match(/.{1,4}/g).join('-');
             return res.json({ code: formatted });
         } else {
             fs.rmSync(sessionDir, { recursive: true, force: true });
