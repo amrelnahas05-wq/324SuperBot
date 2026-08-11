@@ -1,5 +1,5 @@
 {
-  "name": "Queen Riam",
+  "name": "324BOT",
   "version": "2.0.0",
   "description": "WhatsApp Bot",
   "main": "index.js",
@@ -13,7 +13,7 @@
   "keywords": [
     "whatsapp-bot"
   ],
-  "author": "Hector Manuel",
+  "author": "A.ELNAHAS",
   "license": "ISC",
   "engines": {
     "node": "20.x",
