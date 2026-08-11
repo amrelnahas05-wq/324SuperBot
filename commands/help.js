@@ -74,7 +74,7 @@ const CATEGORIES = {
     tools: {
         emoji: '💻',
         title: 'Tools',
-        commands: ['.newsletter', '.trim', '.tomp3', '.voicechanger woman|robot|chipmunk|deep|echo|radio', '.translate', '.transcribe', '.tgsearch', '.reportbug', '.ngl', '.script', '.repo'],
+        commands: ['.newsletter', '.trim', '.tomp3', '.voicechanger woman|robot|chipmunk|deep|echo|radio', '.compress low|medium|high', '.summarize', '.qc', '.translate', '.transcribe', '.tgsearch', '.reportbug', '.ngl', '.script', '.repo'],
     },
     text: {
         emoji: '🔤',
