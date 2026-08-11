@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const AdmZip = require('adm-zip');
 const {
     makeWASocket,
     useMultiFileAuthState,
@@ -19,6 +20,15 @@ const sessions = new Map();
 
 function cleanPhone(phone) {
     return phone.replace(/[^0-9]/g, '');
+}
+
+// Packs the ENTIRE auth folder (creds.json + signal key files) into one
+// base64 string. Encoding creds.json alone loses the pre-key/sync-key
+// files Baileys also writes, which can make a restored session unstable.
+function packSessionDir(sessionDir) {
+    const zip = new AdmZip();
+    zip.addLocalFolder(sessionDir);
+    return zip.toBuffer().toString('base64');
 }
 
 app.post('/pair', async (req, res) => {
@@ -57,15 +67,14 @@ app.post('/pair', async (req, res) => {
 
                 if (connection === 'open') {
                     await saveCreds();
-                    const credsFile = path.join(sessionDir, 'creds.json');
-                    if (fs.existsSync(credsFile)) {
-                        const creds = fs.readFileSync(credsFile, 'utf8');
-                        const sessionId = Buffer.from(creds).toString('base64');
-                        const entry = sessions.get(cleaned);
-                        if (entry) {
-                            entry.ready = true;
-                            entry.sessionId = sessionId;
-                        }
+                    // Give Baileys a moment to flush signal key files to disk
+                    // before we zip the directory.
+                    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+                    const entry = sessions.get(cleaned);
+                    if (entry) {
+                        entry.ready = true;
+                        entry.sessionId = packSessionDir(sessionDir);
                     }
                     sock.end();
                 }
