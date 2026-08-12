@@ -54,7 +54,7 @@ const CATEGORIES = {
     general: {
         emoji: '🌐',
         title: 'General',
-        commands: ['.menu', '.ping', '.alive', '.tts', '.owner', '.joke', '.quote', '.fact', '.weather', '.news', '.lyrics', '.vv', '.vv2', '.ss', '.jid'],
+        commands: ['.menu', '.ping', '.alive', '.tts', '.owner', '.joke', '.quote', '.fact', '.factcheck', '.anime', '.weather', '.news', '.lyrics', '.vv', '.vv2', '.ss', '.jid'],
     },
     owner: {
         emoji: '🔒',
@@ -64,7 +64,7 @@ const CATEGORIES = {
     photo: {
         emoji: '🎨',
         title: 'Photo',
-        commands: ['.sticker', '.simage', '.blur', '.removebg', '.wanted', '.meme', '.take', '.emojimix', '.tgsticker', '.attp', '.wallpaper'],
+        commands: ['.sticker', '.simage', '.blur', '.removebg', '.wanted', '.meme', '.smeme', '.take', '.emojimix', '.tgsticker', '.attp', '.wallpaper'],
     },
     religion: {
         emoji: '☪️',
@@ -74,12 +74,12 @@ const CATEGORIES = {
     tools: {
         emoji: '💻',
         title: 'Tools',
-        commands: ['.newsletter', '.trim', '.tomp3', '.voicechanger woman|robot|chipmunk|deep|echo|radio', '.compress low|medium|high', '.summarize', '.qc', '.translate', '.transcribe', '.tgsearch', '.reportbug', '.ngl', '.script', '.repo'],
+        commands: ['.newsletter', '.trim', '.tomp3', '.voicechanger woman|robot|chipmunk|deep|echo|radio', '.compress low|medium|high', '.summarize', '.qr', '.shorturl', '.qc', '.translate', '.transcribe', '.tgsearch', '.reportbug', '.ngl', '.script', '.repo'],
     },
     text: {
         emoji: '🔤',
         title: 'Text Art',
-        commands: ['.metallic', '.ice', '.snow', '.impressive', '.matrix', '.light', '.neon', '.devil', '.purple', '.thunder', '.leaves', '.1917', '.arena', '.hacker', '.sand', '.blackpink', '.glitch', '.fire'],
+        commands: ['.ascii', '.metallic', '.ice', '.snow', '.impressive', '.matrix', '.light', '.neon', '.devil', '.purple', '.thunder', '.leaves', '.1917', '.arena', '.hacker', '.sand', '.blackpink', '.glitch', '.fire'],
     },
 };
 
