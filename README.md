@@ -28,7 +28,7 @@
 
 ## Session Pairing
 
-Generate your Session ID to connect your WhatsApp account.
+Generate Railway-compatible session variables to connect your WhatsApp account.
 
 You can run the included **self-hosted pairing server** from the `pairing/` folder:
 
@@ -38,15 +38,23 @@ npm install
 node index.js
 ```
 
-Then open `http://localhost:3000` in your browser, enter your phone number, and follow the on-screen instructions to get your `SESSION_ID`.
+For Railway deployments, use the standalone pairing project at [qr-bot](https://github.com/amrelnahas05-wq/qr-bot). It supports both QR scanning and phone-number pairing, then displays the session variables needed by this bot.
 
-### How it works
+### Railway session setup
 
-1. Enter your WhatsApp number (with country code) on the pairing page
-2. You'll receive an 8-digit code
-3. Open WhatsApp → **Linked Devices** → **Link a Device** → **Link with phone number**
-4. Enter the code — your `SESSION_ID` will be displayed
-5. Copy it and set it as the `SESSION_ID` environment variable when deploying
+1. Pair your WhatsApp account with `qr-bot` and copy every displayed variable.
+2. In Railway, open this bot service, then select **Variables → Raw Editor**.
+3. Paste the copied variables, which look like this:
+
+   ```text
+   SESSION_ID_PARTS=2
+   SESSION_ID_1=<first session-data chunk>
+   SESSION_ID_2=<second session-data chunk>
+   ```
+
+4. Save the variables and redeploy the bot service.
+
+> Add every `SESSION_ID_N` variable exactly as generated. Railway cannot store the complete session archive in one environment-variable value.
 
 ---
 
@@ -95,10 +103,12 @@ cd 324SuperBot
 npm install
 ```
 
-Set your `SESSION_ID` in the `.env` file:
+Set all generated session variables in the `.env` file. For example:
 
 ```env
-SESSION_ID="your_session_id_here"
+SESSION_ID_PARTS=2
+SESSION_ID_1="first_session_data_chunk"
+SESSION_ID_2="second_session_data_chunk"
 ```
 
 Then start the bot:
