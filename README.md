@@ -56,6 +56,16 @@ For Railway deployments, use the standalone pairing project at [qr-bot](https://
 
 > Add every `SESSION_ID_N` variable exactly as generated. Railway cannot store the complete session archive in one environment-variable value.
 
+### Meme sounds with `.smeme`
+
+The `.smeme` command searches Voicy and sends a random matching sound as an MP3 audio message. Set the API key as a Railway variable or in your local `.env` file:
+
+```env
+VOICY_API_KEY=your_voicy_api_key
+```
+
+Use it with an optional search phrase, for example `.smeme vine boom`, `.smeme bruh`, or `.smeme airhorn`. If no phrase is supplied, the command searches for general meme sounds. Request a Voicy API key from the [Voicy API documentation](https://api.voicy.network/).
+
 ---
 
 ## Deploy
@@ -109,6 +119,7 @@ Set all generated session variables in the `.env` file. For example:
 SESSION_ID_PARTS=2
 SESSION_ID_1="first_session_data_chunk"
 SESSION_ID_2="second_session_data_chunk"
+VOICY_API_KEY="your_voicy_api_key"
 ```
 
 Then start the bot:
