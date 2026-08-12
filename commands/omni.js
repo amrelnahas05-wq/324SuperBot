@@ -17,8 +17,9 @@ function getBaseUrl() {
         .replace(/\/+$/, '');
 }
 
-module.exports = async function omniCommand(sock, chatId, text, message) {
-    const prompt = getPrompt(text);
+// The bot dispatcher calls handlers as (sock, chatId, message, query).
+module.exports = async function omniCommand(sock, chatId, message, query) {
+    const prompt = getPrompt(query);
 
     if (!prompt) {
         return sock.sendMessage(chatId, {
