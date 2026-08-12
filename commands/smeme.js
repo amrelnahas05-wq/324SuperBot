@@ -20,7 +20,8 @@ function getClipField(clip, ...names) {
     return null;
 }
 
-module.exports = async function smemeCommand(sock, chatId, text, message) {
+// The bot dispatcher calls handlers as (sock, chatId, message, query).
+module.exports = async function smemeCommand(sock, chatId, message, text) {
     const apiKey = process.env.VOICY_API_KEY;
     if (!apiKey) {
         return sock.sendMessage(chatId, {
@@ -32,7 +33,7 @@ module.exports = async function smemeCommand(sock, chatId, text, message) {
 
     try {
         await sock.sendMessage(chatId, {
-            react: { text: '🔎', key: message.key }
+            react: { text: '🔎', key: message?.key }
         });
 
         const searchUrl = new URL(VOICY_API_URL);
@@ -87,7 +88,7 @@ module.exports = async function smemeCommand(sock, chatId, text, message) {
         }, { quoted: message });
 
         await sock.sendMessage(chatId, {
-            react: { text: '✅', key: message.key }
+            react: { text: '✅', key: message?.key }
         });
     } catch (error) {
         console.error('.smeme error:', error.response?.status || error.message);
@@ -95,7 +96,7 @@ module.exports = async function smemeCommand(sock, chatId, text, message) {
             text: '❌ I could not fetch a meme sound right now. Please try again later.'
         }, { quoted: getFakeVcard() });
         await sock.sendMessage(chatId, {
-            react: { text: '❌', key: message.key }
+            react: { text: '❌', key: message?.key }
         });
     }
 };
