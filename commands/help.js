@@ -29,7 +29,7 @@ const CATEGORIES = {
     ai: {
         emoji: '🤖',
         title: 'AI',
-        commands: ['.gpt', '.gemini', '.deepseek', '.aiart', '.suno', '.imagine', '.veo3'],
+        commands: ['.gpt', '.gemini', '.deepseek', '.aiart', '.suno', '.imagine', '.veo3', '.omni'],
     },
     download: {
         emoji: '📥',
