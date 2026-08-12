@@ -4,8 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 const axios = require('axios');
-const { Jimp, loadFont, measureText, rgbaToInt } = require('jimp');
-const jimpFonts = require('jimp/fonts');
+const sharp = require('sharp');
 const webp = require('node-webpmux');
 const settings = require('../settings');
 const getFakeVcard = require('../lib/fakeVcard');
@@ -15,32 +14,69 @@ const PADDING = 28;
 const AVATAR_SIZE = 76;
 const MAX_TEXT_WIDTH = CANVAS - PADDING * 2 - AVATAR_SIZE - 20;
 
+function unwrapMessage(message) {
+    return message?.ephemeralMessage?.message
+        || message?.viewOnceMessage?.message
+        || message?.viewOnceMessageV2?.message
+        || message;
+}
+
 function getQuotedInfo(message) {
-    const ctx = message.message?.extendedTextMessage?.contextInfo;
+    const currentMessage = unwrapMessage(message?.message);
+    const ctx = currentMessage?.extendedTextMessage?.contextInfo
+        || currentMessage?.imageMessage?.contextInfo
+        || currentMessage?.videoMessage?.contextInfo;
     if (!ctx?.quotedMessage) return null;
 
-    const quotedMsg = ctx.quotedMessage;
-    const text = quotedMsg.conversation
-        || quotedMsg.extendedTextMessage?.text
-        || quotedMsg.imageMessage?.caption
-        || quotedMsg.videoMessage?.caption
+    const quotedMsg = unwrapMessage(ctx.quotedMessage);
+    const text = quotedMsg?.conversation
+        || quotedMsg?.extendedTextMessage?.text
+        || quotedMsg?.imageMessage?.caption
+        || quotedMsg?.videoMessage?.caption
+        || quotedMsg?.documentMessage?.caption
         || '';
 
     return {
-        participant: ctx.participant,
-        text: text.trim(),
+        participant: ctx.participant || quotedMsg?.contextInfo?.participant,
+        text: String(text).trim(),
     };
 }
 
-function wrapText(font, text, maxWidth) {
-    const words = text.split(/\s+/);
+function jidFallback(jid) {
+    return String(jid || '').split('@')[0].split(':')[0] || 'Unknown';
+}
+
+async function resolveDisplayName(sock, chatId, participant) {
+    if (!participant) return 'Unknown';
+    try {
+        if (chatId.endsWith('@g.us')) {
+            const metadata = await sock.groupMetadata(chatId);
+            const member = metadata?.participants?.find((item) => item.id === participant);
+            const name = member?.name || member?.notify || member?.vcardName;
+            if (name) return name;
+        }
+    } catch (error) {
+        console.error('qc participant lookup failed:', error.message);
+    }
+    return jidFallback(participant);
+}
+
+function escapeXml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+function wrapUnicodeText(text, maxCharacters = 30) {
+    const words = String(text || '(no text content)').trim().split(/\s+/);
     const lines = [];
     let current = '';
-
     for (const word of words) {
         const attempt = current ? `${current} ${word}` : word;
-        const width = measureText(font, attempt);
-        if (width > maxWidth && current) {
+        if ([...attempt].length > maxCharacters && current) {
             lines.push(current);
             current = word;
         } else {
@@ -48,52 +84,47 @@ function wrapText(font, text, maxWidth) {
         }
     }
     if (current) lines.push(current);
-    return lines;
+    return lines.slice(0, 14);
 }
 
 async function buildQuoteImage({ displayName, avatarBuffer, text }) {
-    const image = new Jimp({ width: CANVAS, height: CANVAS, color: 0x00000000 });
-
-    const bubbleColor = rgbaToInt(30, 30, 30, 255);
-
-    const fontName = await loadFont(jimpFonts.SANS_16_WHITE);
-    const fontText = await loadFont(jimpFonts.SANS_16_WHITE);
-
-    // Avatar (circular crop)
-    let avatar;
-    try {
-        avatar = await Jimp.read(avatarBuffer);
-    } catch (_) {
-        avatar = new Jimp({ width: AVATAR_SIZE, height: AVATAR_SIZE, color: 0x555555ff });
-    }
-    avatar.cover({ w: AVATAR_SIZE, h: AVATAR_SIZE });
-    avatar.mask(buildCircleMask(AVATAR_SIZE), 0, 0);
-
-    const textLines = wrapText(fontText, text || '(no text content)', MAX_TEXT_WIDTH);
-    const lineHeight = 22;
-    const nameHeight = 24;
+    const textLines = wrapUnicodeText(text);
+    const lineHeight = 24;
+    const nameHeight = 26;
     const bubbleHeight = Math.min(
         CANVAS - PADDING * 2,
         nameHeight + textLines.length * lineHeight + PADDING
     );
     const bubbleY = Math.max(PADDING, (CANVAS - bubbleHeight) / 2);
-
     const bubbleX = PADDING + AVATAR_SIZE + 16;
     const bubbleWidth = CANVAS - bubbleX - PADDING;
+    const safeName = escapeXml(displayName || 'Unknown');
+    const safeLines = textLines.map(escapeXml);
+    const textDirection = /[\u0590-\u08FF]/.test(text || '') ? 'rtl' : 'ltr';
+    const textAnchor = textDirection === 'rtl' ? 'end' : 'start';
+    const textX = textDirection === 'rtl' ? bubbleX + bubbleWidth - 16 : bubbleX + 16;
 
-    // Draw bubble background
-    const bubble = new Jimp({ width: bubbleWidth, height: bubbleHeight, color: bubbleColor });
-    image.composite(bubble, bubbleX, bubbleY);
-    image.composite(avatar, PADDING, bubbleY);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS}" height="${CANVAS}">
+      <rect width="${CANVAS}" height="${CANVAS}" fill="#000000" fill-opacity="0"/>
+      <circle cx="${PADDING + AVATAR_SIZE / 2}" cy="${bubbleY + AVATAR_SIZE / 2}" r="${AVATAR_SIZE / 2}" fill="#555555"/>
+      <rect x="${bubbleX}" y="${bubbleY}" width="${bubbleWidth}" height="${bubbleHeight}" rx="18" fill="#1e1e1e"/>
+      <text x="${textX}" y="${bubbleY + 25}" fill="white" font-size="16" font-family="Noto Sans Arabic, Noto Sans, sans-serif" text-anchor="${textAnchor}" direction="${textDirection}">${safeName}</text>
+      ${safeLines.map((line, index) => `<text x="${textX}" y="${bubbleY + 25 + nameHeight + (index + 1) * lineHeight}" fill="white" font-size="16" font-family="Noto Sans Arabic, Noto Sans, sans-serif" text-anchor="${textAnchor}" direction="${textDirection}">${line}</text>`).join('')}
+    </svg>`;
 
-    image.print({ font: fontName, x: bubbleX + 16, y: bubbleY + 8, text: displayName || 'Unknown' });
-    let lineY = bubbleY + 8 + nameHeight;
-    for (const line of textLines) {
-        image.print({ font: fontText, x: bubbleX + 16, y: lineY, text: line });
-        lineY += lineHeight;
+    let pipeline = sharp(Buffer.from(svg)).png();
+    if (avatarBuffer) {
+        try {
+            const avatar = await sharp(avatarBuffer)
+                .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover' })
+                .png()
+                .toBuffer();
+            pipeline = sharp(Buffer.from(svg)).composite([{ input: avatar, left: PADDING, top: Math.round(bubbleY) }]).png();
+        } catch (_) {
+            // Keep the generated placeholder avatar if the profile image is unavailable.
+        }
     }
-
-    return image.getBuffer('image/png');
+    return pipeline.toBuffer();
 }
 
 function buildCircleMask(size) {
@@ -155,11 +186,10 @@ async function qcCommand(sock, chatId, message) {
     try {
         await sock.sendMessage(chatId, { react: { text: '💬', key: message.key } });
 
-        let displayName = 'Unknown';
+        let displayName = await resolveDisplayName(sock, chatId, quoted.participant);
         let avatarBuffer = null;
         if (quoted.participant) {
             try {
-                displayName = quoted.participant.split('@')[0];
                 avatarBuffer = await sock.profilePictureUrl(quoted.participant, 'image')
                     .then((url) => axios.get(url, { responseType: 'arraybuffer' }))
                     .then((res) => Buffer.from(res.data));
