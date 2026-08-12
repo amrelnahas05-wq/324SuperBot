@@ -157,3 +157,18 @@ Edit `settings.js` to customize the bot:
 ## Notice
 
 > **Educational use only.** Do not use this bot for spam or any illegal activities.
+
+### OmniRoute AI with `.omni`
+
+The `.omni` command sends a question to a separately running [OmniRoute](https://github.com/diegosouzapw/OmniRoute) instance through its OpenAI-compatible API. Configure the connection in Railway Variables or a local `.env` file:
+
+```env
+OMNIROUTE_BASE_URL=http://127.0.0.1:20128/v1
+OMNIROUTE_MODEL=auto
+OMNIROUTE_API_KEY=your_omniroute_api_key
+# Optional:
+OMNIROUTE_TIMEOUT_MS=45000
+OMNIROUTE_SYSTEM_PROMPT=Answer clearly and concisely in English.
+```
+
+For a separate Railway service, replace `127.0.0.1` with the private or protected URL of the OmniRoute service. Use `.omni Explain how solar panels work` in WhatsApp. The command is intentionally isolated in `commands/omni.js`, so its URL, model, prompt, timeout, and behavior can be edited easily.
