@@ -53,28 +53,45 @@ function renderAscii(value) {
     ).join('\n');
 }
 
+function getQuotedText(message) {
+    const quoted = message?.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    if (!quoted) return '';
+    return quoted.conversation
+        || quoted.extendedTextMessage?.text
+        || quoted.imageMessage?.caption
+        || quoted.videoMessage?.caption
+        || quoted.documentMessage?.caption
+        || '';
+}
+
 module.exports = async function asciiCommand(sock, chatId, message, text) {
-    const value = String(text || '').trim();
+    const directValue = String(text || '').trim();
+    const value = directValue || String(getQuotedText(message) || '').trim();
 
     if (!value) {
         return sock.sendMessage(chatId, {
-            text: 'Please provide text to convert to ASCII art.\n\nExample: `.ascii 324BOT`'
+            text: 'Please provide text to convert to ASCII art, or reply to a text message with `.ascii`.\n\nExample: `.ascii 324BOT`'
         }, { quoted: getFakeVcard() });
     }
 
     if ([...value].length > 18) {
         return sock.sendMessage(chatId, {
             text: 'Please use 18 characters or fewer so the ASCII art stays readable in WhatsApp.'
-        }, { quoted: getFakeVcard() });
+        }, { quoted: message || getFakeVcard() });
     }
 
+    const unsupported = [...value].filter((character) => !GLYPHS[character.toUpperCase()]);
     const art = renderAscii(value);
+    const note = unsupported.length
+        ? '\n\n_Note: unsupported characters are displayed as ?._'
+        : '';
+
     await sock.sendMessage(chatId, {
-        text: `\`\`\`\n${art}\n\`\`\``
-    }, { quoted: message });
+        text: `\`\`\`\n${art}\n\`\`\`${note}`
+    }, { quoted: message || getFakeVcard() });
 };
 
 module.exports.help = '`.ascii <text>` — create block text art';
 module.exports.tags = ['text'];
-module.exports.command = ['ascii'];
-module.exports.alias = ['ascii'];
+module.exports.command = ['ascii', 'ASCII'];
+module.exports.alias = ['ascii', 'ASCII'];
