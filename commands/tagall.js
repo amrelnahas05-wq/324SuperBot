@@ -1,34 +1,37 @@
-const isAdmin = require('../lib/isAdmin'); // The isAdmin function is no longer used for the permission check.
+const isAdmin = require('../lib/isAdmin');
+const { isSudo } = require('../lib/index');
 
 async function tagAllCommand(sock, chatId, senderId) {
     try {
-        // The isAdmin check has been removed, so all users can now use this command.
-        
-        // Get group metadata
-        const groupMetadata = await sock.groupMetadata(chatId);
-        const participants = groupMetadata.participants;
-
-        if (!participants || participants.length === 0) {
-            await sock.sendMessage(chatId, { text: 'No participants found in the group.' });
+        if (!chatId.endsWith('@g.us')) {
+            await sock.sendMessage(chatId, { text: '❌ This command can only be used in a group.' });
             return;
         }
 
-        // Create message with each member on a new line
-        let message = '🔊 *Group Members:*\n\n';
-        participants.forEach(participant => {
-            message += `@${participant.id.split('@')[0]}\n`; // Add \n for new line
-        });
+        const [{ isSenderAdmin }, senderIsSudo] = await Promise.all([
+            isAdmin(sock, chatId, senderId),
+            isSudo(senderId),
+        ]);
 
-        // Send message with mentions
-        await sock.sendMessage(chatId, {
-            text: message,
-            mentions: participants.map(p => p.id)
-        });
+        if (!isSenderAdmin && !senderIsSudo) {
+            await sock.sendMessage(chatId, { text: '❌ Only group admins or sudo users can use .tagall.' });
+            return;
+        }
 
+        const groupMetadata = await sock.groupMetadata(chatId);
+        const participants = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
+        if (!participants.length) {
+            await sock.sendMessage(chatId, { text: '❌ I could not find group participants.' });
+            return;
+        }
+
+        const mentions = participants.map((participant) => participant.id).filter(Boolean);
+        const text = `🔊 *Group Members:*\n\n${mentions.map((jid) => `@${jid.split('@')[0]}`).join('\n')}`;
+        await sock.sendMessage(chatId, { text, mentions });
     } catch (error) {
-        console.error('Error in tagall command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to tag all members.' });
+        console.error('[TAGALL] Command failed:', error.message);
+        await sock.sendMessage(chatId, { text: '❌ Failed to tag group members. Please try again.' });
     }
 }
 
-module.exports = tagAllCommand; // Export directly
+module.exports = tagAllCommand;

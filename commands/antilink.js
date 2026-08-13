@@ -1,10 +1,11 @@
-const { setAntilink, getAntilink, removeAntilink } = require('../lib/index');
+const { setAntilink, getAntilink, removeAntilink, isSudo } = require('../lib/index');
 const isAdmin = require('../lib/isAdmin');
 
 async function handleAntilinkCommand(sock, chatId, userMessage, senderId, isSenderAdmin) {
     try {
-        if (!isSenderAdmin && !message.key.fromMe) { // ← Added fromMe check for sudo users
-            await sock.sendMessage(chatId, { text: '```For Group Admins Only!```' });
+        const senderIsSudo = await isSudo(senderId);
+        if (!isSenderAdmin && !senderIsSudo) {
+            await sock.sendMessage(chatId, { text: '```For Group Admins or sudo users only!```' });
             return;
         }
 
@@ -87,8 +88,10 @@ async function handleLinkDetection(sock, chatId, message, userMessage, senderId)
             const isSenderAdmin = adminStatus.isSenderAdmin;
             const isBotAdmin = adminStatus.isBotAdmin;
 
-            // Skip if sender is admin, bot itself, or bot isn't admin
-            if (isSenderAdmin || message.key.fromMe || !isBotAdmin) {
+            const senderIsSudo = await isSudo(senderId);
+
+            // Skip admins, canonical sudo users, the bot itself, or enforcement without bot admin rights.
+            if (isSenderAdmin || senderIsSudo || message.key.fromMe || !isBotAdmin) {
                 console.log(`⏩ Skipping antilink action (admin/self/bot not admin)`);
                 return true;
             }

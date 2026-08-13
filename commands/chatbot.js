@@ -8,7 +8,7 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const CONFIG_FILE = path.join(DATA_DIR, 'chatbot.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'chatbot_history.json');
 const CHAT_API = 'https://chatadmin.org/gd-api/v1/chat/send';
-const FIREBASE_API_KEY = 'AIzaSyD7w2BvFDOoPofWuBWzDZGsRNG-3eX4CUc';
+const FIREBASE_API_KEY = process.env.CHATBOT_FIREBASE_API_KEY || '';
 
 const AI_MODELS = [
     { name: 'GPT-4o', model: 'gpt-4o' },
@@ -104,6 +104,10 @@ function textToAudio(text) {
 }
 
 async function getFirebaseToken() {
+    if (!FIREBASE_API_KEY) {
+        throw new Error('CHATBOT_FIREBASE_API_KEY is not configured');
+    }
+
     const res = await axios.post(
         `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
         {},

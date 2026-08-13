@@ -1,0 +1,24 @@
+# Secrets and WhatsApp session credentials
+.env
+.env.*
+!.env.example
+session/
+creds.json
+
+# Dependencies and build artifacts
+node_modules/
+npm-debug.log*
+*.log
+coverage/
+
+# Temporary media and generated files
+tmp/
+cache/
+
+# Mutable runtime state (keep schema/templates only)
+data/chatbot_history.json
+data/messageCount.json
+data/polls.json
+data/processedIds.json
+
+data/*.bak

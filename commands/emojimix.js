@@ -1,102 +1,98 @@
-const fetch = require('node-fetch');
 const fs = require('fs');
-const { exec } = require('child_process');
 const path = require('path');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 
-async function emojimixCommand(sock, chatId, msg) {
+const execFileAsync = promisify(execFile);
+const TENOR_API_KEY = process.env.TENOR_API_KEY || '';
+
+async function emojimixCommand(sock, chatId, msg, text) {
+    const tmpDir = path.join(process.cwd(), 'tmp');
+    let tempFile;
+    let outputFile;
+
     try {
-        // Get the text after command
-        const text = msg.message?.conversation?.trim() || 
-                    msg.message?.extendedTextMessage?.text?.trim() || '';
-        
-        const args = text.split(' ').slice(1);
-        
+        const hasDispatcherText = typeof text === 'string' && text.trim();
+        const commandText = hasDispatcherText
+            ? text.trim()
+            : (msg.message?.conversation || msg.message?.extendedTextMessage?.text || '').trim();
+        const args = (hasDispatcherText ? commandText : commandText.split(/\s+/).slice(1).join(' '))
+            .trim()
+            .split(/\s+/);
+
         if (!args[0]) {
             await sock.sendMessage(chatId, { text: '🎴 Example: .emojimix 😎+🥰' });
             return;
         }
 
-        if (!text.includes('+')) {
-            await sock.sendMessage(chatId, { 
-                text: '✳️ Separate the emoji with a *+* sign\n\n📌 Example: \n*.emojimix* 😎+🥰' 
+        if (!args[0].includes('+')) {
+            await sock.sendMessage(chatId, {
+                text: '✳️ Separate the emojis with a *+* sign.\n\n📌 Example: *.emojimix* 😎+🥰',
             });
             return;
         }
 
-        let [emoji1, emoji2] = args[0].split('+').map(e => e.trim());
+        if (!TENOR_API_KEY) {
+            await sock.sendMessage(chatId, { text: '❌ Emoji Mix is not configured. Ask the bot owner to set TENOR_API_KEY.' });
+            return;
+        }
 
-        // Using Tenor API endpoint
-        const url = `https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`;
+        const [emoji1, emoji2] = args[0].split('+').map((entry) => entry.trim());
+        if (!emoji1 || !emoji2) {
+            await sock.sendMessage(chatId, { text: '❌ Please provide two emojis, for example: .emojimix 😎+🥰' });
+            return;
+        }
 
-        const response = await fetch(url);
+        const search = `${emoji1}_${emoji2}`;
+        const url = new URL('https://tenor.googleapis.com/v2/featured');
+        url.searchParams.set('key', TENOR_API_KEY);
+        url.searchParams.set('contentfilter', 'high');
+        url.searchParams.set('media_filter', 'png_transparent');
+        url.searchParams.set('component', 'proactive');
+        url.searchParams.set('collection', 'emoji_kitchen_v5');
+        url.searchParams.set('q', search);
+
+        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) throw new Error(`Tenor request failed with HTTP ${response.status}`);
         const data = await response.json();
+        const imageUrl = data?.results?.[0]?.url;
 
-        if (!data.results || data.results.length === 0) {
-            await sock.sendMessage(chatId, { 
-                text: '❌ These emojis cannot be mixed! Try different ones.' 
-            });
+        if (!imageUrl) {
+            await sock.sendMessage(chatId, { text: '❌ These emojis cannot be mixed. Try a different pair.' });
             return;
         }
 
-        // Get the first result URL
-        const imageUrl = data.results[0].url;
+        const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(20000) });
+        if (!imageResponse.ok) throw new Error(`Emoji image download failed with HTTP ${imageResponse.status}`);
+        const buffer = Buffer.from(await imageResponse.arrayBuffer());
+        if (!buffer.length) throw new Error('Emoji image download was empty');
 
-        // Create temp directory if it doesn't exist
-        const tmpDir = path.join(process.cwd(), 'tmp');
-        if (!fs.existsSync(tmpDir)) {
-            fs.mkdirSync(tmpDir, { recursive: true });
-        }
-
-        // Generate random filenames with escaped paths
-        const tempFile = path.join(tmpDir, `temp_${Date.now()}.png`).replace(/\\/g, '/');
-        const outputFile = path.join(tmpDir, `sticker_${Date.now()}.webp`).replace(/\\/g, '/');
-
-        // Download and save the image
-        const imageResponse = await fetch(imageUrl);
-        const buffer = await imageResponse.buffer();
+        fs.mkdirSync(tmpDir, { recursive: true });
+        const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        tempFile = path.join(tmpDir, `emojimix_${nonce}.png`);
+        outputFile = path.join(tmpDir, `emojimix_${nonce}.webp`);
         fs.writeFileSync(tempFile, buffer);
 
-        // Convert to WebP using ffmpeg with proper path escaping
-        const ffmpegCommand = `ffmpeg -i "${tempFile}" -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" "${outputFile}"`;
-        
-        await new Promise((resolve, reject) => {
-            exec(ffmpegCommand, (error) => {
-                if (error) {
-                    console.error('FFmpeg error:', error);
-                    reject(error);
-                } else {
-                    resolve();
-                }
-            });
-        });
+        await execFileAsync('ffmpeg', [
+            '-y', '-i', tempFile,
+            '-vf', 'scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000',
+            outputFile,
+        ], { timeout: 30000 });
 
-        // Check if output file exists
-        if (!fs.existsSync(outputFile)) {
-            throw new Error('Failed to create sticker file');
-        }
-
-        // Read the WebP file
         const stickerBuffer = fs.readFileSync(outputFile);
-
-        // Send the sticker
-        await sock.sendMessage(chatId, { 
-            sticker: stickerBuffer 
-        }, { quoted: msg });
-
-        // Cleanup temp files
-        try {
-            fs.unlinkSync(tempFile);
-            fs.unlinkSync(outputFile);
-        } catch (err) {
-            console.error('Error cleaning up temp files:', err);
-        }
-
+        await sock.sendMessage(chatId, { sticker: stickerBuffer }, { quoted: msg });
     } catch (error) {
-        console.error('Error in emojimix command:', error);
-        await sock.sendMessage(chatId, { 
-            text: '❌ Failed to mix emojis! Make sure you\'re using valid emojis.\n\nExample: .emojimix 😎+🥰' 
+        console.error('[EMOJIMIX] Command failed:', error.message);
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to mix these emojis. Please try a different pair later.',
         });
+    } finally {
+        for (const file of [tempFile, outputFile]) {
+            if (file && fs.existsSync(file)) {
+                try { fs.unlinkSync(file); } catch (_) {}
+            }
+        }
     }
 }
 
-module.exports = emojimixCommand; 
+module.exports = emojimixCommand;
