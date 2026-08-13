@@ -39,7 +39,7 @@ const CATEGORIES = {
     fun: {
         emoji: '🎯',
         title: 'Fun',
-        commands: ['.compliment', '.insult', '.flirt', '.goodnight', '.character', '.crush', '.simp', '.stupid', '.ship', '.wasted', '.8ball'],
+        commands: ['.compliment', '.insult', '.flirt', '.goodnight', '.character', '.crush', '.simp', '.stupid', '.ship', '.wasted', '.8ball', '.satr'],
     },
     games: {
         emoji: '🎮',
