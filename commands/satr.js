@@ -15,11 +15,9 @@ async function sendSatr(sock, chatId) {
   }
 
   const randomItem = items[Math.floor(Math.random() * items.length)];
-  const title = arabicList.title || 'قائمة عربية';
-  const description = arabicList.description ? `${arabicList.description}\n\n` : '';
 
   await sock.sendMessage(chatId, {
-    text: `*${title}*\n\n${description}${randomItem}`,
+    text: randomItem,
   });
 }
 
