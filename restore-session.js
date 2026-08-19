@@ -84,7 +84,10 @@ function restoreFromEnv() {
 }
 
 try {
-    validateRuntimeConfig();
+    const runtimeConfig = validateRuntimeConfig();
+    if (!runtimeConfig.hasOwnerNumber) {
+        console.warn('[restore-session] BOT_OWNER_NUMBER is unavailable; owner-only commands will remain disabled until it is configured.');
+    }
     if (alreadyHasSession()) {
         console.log('[restore-session] ./session/creds.json already exists — using existing session, not touching it.');
     } else {

@@ -46,12 +46,17 @@ test('legacy session folders restore safely while extracting only the JSON filen
 });
 
 test('runtime configuration requires a valid owner and a strong pairing token when pairing is enabled', () => {
-    assert.throws(() => validateRuntimeConfig({}), /BOT_OWNER_NUMBER/);
+    assert.deepEqual(validateRuntimeConfig({}), { ownerNumber: '', hasOwnerNumber: false });
     assert.throws(
         () => validateRuntimeConfig({ BOT_OWNER_NUMBER: '201060715493', PAIRING_ENABLED: 'true', PAIRING_API_TOKEN: 'short' }),
         /PAIRING_API_TOKEN/,
     );
     assert.equal(validateRuntimeConfig({ BOT_OWNER_NUMBER: '+201060715493' }).ownerNumber, '201060715493');
+    assert.equal(validateRuntimeConfig({ BOT_OWNER_NUMBER: '+201060715493' }).hasOwnerNumber, true);
+    assert.throws(
+        () => validateRuntimeConfig({ BOT_OWNER_NUMBER: '1234567890123456' }),
+        /BOT_OWNER_NUMBER/,
+    );
 });
 
 test('configured owner access is derived from the environment rather than committed sudo data', () => {
