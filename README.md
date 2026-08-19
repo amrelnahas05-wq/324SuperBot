@@ -158,6 +158,10 @@ Edit `settings.js` to customize the bot:
 
 > **Educational use only.** Do not use this bot for spam or any illegal activities.
 
+## Editable Arabic list
+
+A starter Arabic list is stored in [`data/arabic-list.json`](data/arabic-list.json). Replace the values inside `title`, `description`, and the `items` array whenever you are ready. Keep the file as valid JSON: use double quotes around text, separate entries with commas, and preserve Arabic text as UTF-8.
+
 ### OmniRoute AI with `.omni`
 
 The `.omni` command sends a question to a separately running [OmniRoute](https://github.com/diegosouzapw/OmniRoute) instance through its OpenAI-compatible API. Configure the connection in Railway Variables or a local `.env` file:
