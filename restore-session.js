@@ -12,10 +12,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const AdmZip = require('adm-zip');
+const { decodeSessionArchive, extractSessionArchive } = require('./lib/sessionArchive');
+const { validateRuntimeConfig } = require('./lib/runtimeConfig');
 
 const SESSION_DIR = path.join(__dirname, 'session');
 const CREDS_FILE = path.join(SESSION_DIR, 'creds.json');
+const MAX_SESSION_PARTS = 32;
 
 function alreadyHasSession() {
     return fs.existsSync(CREDS_FILE);
@@ -25,6 +27,9 @@ function readSessionFromEnv() {
     const declaredCount = Number.parseInt(process.env.SESSION_ID_PARTS, 10);
 
     if (Number.isInteger(declaredCount) && declaredCount > 0) {
+        if (declaredCount > MAX_SESSION_PARTS) {
+            throw new Error(`SESSION_ID_PARTS cannot exceed ${MAX_SESSION_PARTS}`);
+        }
         const parts = [];
         for (let index = 1; index <= declaredCount; index += 1) {
             const value = process.env[`SESSION_ID_${index}`];
@@ -63,14 +68,11 @@ function restoreFromEnv() {
     }
 
     try {
-        const zipBuffer = Buffer.from(serializedSession, 'base64');
-        const zip = new AdmZip(zipBuffer);
-
-        fs.mkdirSync(SESSION_DIR, { recursive: true });
-        zip.extractAllTo(SESSION_DIR, /* overwrite */ true);
+        const zipBuffer = decodeSessionArchive(serializedSession);
+        const extractedFiles = extractSessionArchive(zipBuffer, SESSION_DIR);
 
         if (fs.existsSync(CREDS_FILE)) {
-            console.log('[restore-session] Session restored successfully.');
+            console.log(`[restore-session] Session restored successfully (${extractedFiles.length} protected file(s)).`);
         } else {
             console.error('[restore-session] Session data was extracted but creds.json was not found.');
             console.error('[restore-session] Ensure every SESSION_ID_N value was copied without line breaks.');
@@ -81,8 +83,14 @@ function restoreFromEnv() {
     }
 }
 
-if (alreadyHasSession()) {
-    console.log('[restore-session] ./session/creds.json already exists — using existing session, not touching it.');
-} else {
-    restoreFromEnv();
+try {
+    validateRuntimeConfig();
+    if (alreadyHasSession()) {
+        console.log('[restore-session] ./session/creds.json already exists — using existing session, not touching it.');
+    } else {
+        restoreFromEnv();
+    }
+} catch (err) {
+    console.error('[restore-session] Startup blocked:', err.message);
+    process.exitCode = 1;
 }

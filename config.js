@@ -1,5 +1,9 @@
 require('dotenv').config();
 
+function readOptionalEnv(name) {
+    return String(process.env[name] || '').trim();
+}
+
 global.APIs = {
     xteam: 'https://api.xteam.xyz',
     dzx: 'https://api.dhamzxploit.my.id',
@@ -15,12 +19,12 @@ global.APIs = {
 };
 
 global.APIKeys = {
-    'https://api.xteam.xyz': 'd90a9e986e18778b',
-    'https://api.lolhuman.xyz': '85faf717d0545d14074659ad',
-    'https://api.neoxr.my.id': 'yourkey',
-    'https://violetics.pw': 'beta',
-    'https://zenzapis.xyz': 'yourkey',
-    'https://api-fgmods.ddns.net': 'fg-dylux'
+    'https://api.xteam.xyz': readOptionalEnv('XTEAM_API_KEY'),
+    'https://api.lolhuman.xyz': readOptionalEnv('LOLHUMAN_API_KEY'),
+    'https://api.neoxr.my.id': readOptionalEnv('NEOXR_API_KEY'),
+    'https://violetics.pw': readOptionalEnv('VIOLETICS_API_KEY'),
+    'https://zenzapis.xyz': readOptionalEnv('ZENZAPIS_API_KEY'),
+    'https://api-fgmods.ddns.net': readOptionalEnv('FGMODS_API_KEY')
 };
 
 module.exports = {

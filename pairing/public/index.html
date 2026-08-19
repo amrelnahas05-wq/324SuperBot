@@ -121,6 +121,8 @@
       color: #666;
     }
 
+    .qr-image { width: 260px; height: 260px; margin: 0 auto 12px; background: #fff; padding: 8px; border-radius: 8px; }
+
     .session-box {
       margin-top: 28px;
       background: #111;
@@ -184,24 +186,22 @@
 
     <div class="steps">
       <b>How it works:</b><br/>
-      1. Enter your WhatsApp number below<br/>
-      2. You'll receive an 8-digit pairing code<br/>
-      3. Open WhatsApp → Linked Devices → Link a Device<br/>
-      4. Tap <b>"Link with phone number"</b> and enter the code<br/>
-      5. Your SESSION_ID will appear — copy it in full<br/>
-      6. In Railway → your service → Variables, set <b>SESSION_ID</b> to that value, then redeploy
+      1. Enter the private pairing access token and generate a QR code<br/>
+      2. Open WhatsApp → Linked Devices → Link a Device and scan it<br/>
+      3. Your SESSION_ID will appear — copy it in full<br/>
+      4. In Railway → your service → Variables, set <b>SESSION_ID</b> to that value, then redeploy
     </div>
 
-    <input type="tel" id="phoneInput" placeholder="Phone number with country code (e.g. 201060715493)" />
-    <button id="pairBtn" onclick="startPairing()">Get Pairing Code</button>
+    <input type="password" id="tokenInput" autocomplete="off" placeholder="Private pairing access token" />
+    <button id="pairBtn" onclick="startPairing()">Generate pairing QR</button>
 
     <p class="error" id="errorMsg"></p>
     <p class="spinner" id="spinner">⏳ Waiting for you to enter the code in WhatsApp...</p>
 
     <div class="code-box" id="codeBox">
-      <div class="label">Enter this code in WhatsApp → Linked Devices</div>
-      <div class="code-value" id="codeValue">----</div>
-      <div class="code-hint">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Link with phone number</div>
+      <div class="label">Scan this QR in WhatsApp → Linked Devices</div>
+      <img class="qr-image" id="qrImage" alt="WhatsApp pairing QR code" />
+      <div class="code-hint">This pairing session expires after five minutes and is never cached by the server.</div>
     </div>
 
     <div class="session-box" id="sessionBox">
@@ -216,26 +216,27 @@
   </div>
 
   <script>
-    let currentPhone = '';
+    let pairingAccessToken = '';
+    let pairingSessionId = '';
     let pollInterval = null;
 
     async function startPairing() {
-      const phone = document.getElementById('phoneInput').value.trim();
+      const accessToken = document.getElementById('tokenInput').value.trim();
       const errorEl = document.getElementById('errorMsg');
       const btn = document.getElementById('pairBtn');
 
       errorEl.textContent = '';
-      if (!phone) { errorEl.textContent = 'Please enter your phone number.'; return; }
+      if (!accessToken) { errorEl.textContent = 'Enter the private pairing access token.'; return; }
 
-      currentPhone = phone.replace(/[^0-9]/g, '');
+      pairingAccessToken = accessToken;
       btn.disabled = true;
       btn.textContent = 'Requesting code...';
 
       try {
         const res = await fetch('/pair', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: currentPhone }),
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${pairingAccessToken}` },
+          body: JSON.stringify({}),
         });
         const data = await res.json();
 
@@ -246,10 +247,11 @@
           return;
         }
 
-        document.getElementById('codeValue').textContent = data.code;
+        pairingSessionId = data.sessionId;
+        document.getElementById('qrImage').src = data.qr;
         document.getElementById('codeBox').style.display = 'block';
         document.getElementById('spinner').style.display = 'block';
-        btn.textContent = 'Code sent — check WhatsApp';
+        btn.textContent = 'Scan the QR in WhatsApp';
 
         pollInterval = setInterval(pollSession, 3000);
       } catch (e) {
@@ -261,7 +263,7 @@
 
     async function pollSession() {
       try {
-        const res = await fetch(`/session/${currentPhone}`);
+        const res = await fetch(`/session/${pairingSessionId}`, { headers: { 'Authorization': `Bearer ${pairingAccessToken}` } });
         const data = await res.json();
 
         if (data.status === 'ready') {

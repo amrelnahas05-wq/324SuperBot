@@ -14,6 +14,7 @@ coverage/
 # Temporary media and generated files
 tmp/
 cache/
+pairing/temp_sessions/
 
 # Mutable runtime state (keep schema/templates only)
 data/chatbot_history.json

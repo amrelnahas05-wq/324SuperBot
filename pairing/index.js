@@ -11,13 +11,31 @@ const {
     makeCacheableSignalKeyStore,
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
+const { createPairingAccessMiddleware } = require('../lib/pairingAccess');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const sessions = new Map();
+const PAIRING_SESSION_TTL_MS = 5 * 60 * 1000;
 
-app.use(express.json());
+app.disable('x-powered-by');
+app.use((_, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+});
+app.use(express.json({ limit: '2kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+function removeSession(sessionId) {
+    const entry = sessions.get(sessionId);
+    if (!entry) return;
+    clearTimeout(entry.cleanupTimer);
+    try { entry.sock?.end(); } catch (_) {}
+    fs.rmSync(entry.sessionDir, { recursive: true, force: true });
+    sessions.delete(sessionId);
+}
 
 function packSessionDir(sessionDir) {
     const zip = new AdmZip();
@@ -25,7 +43,7 @@ function packSessionDir(sessionDir) {
     return zip.toBuffer().toString('base64');
 }
 
-app.post('/pair', async (_req, res) => {
+app.post('/pair', createPairingAccessMiddleware(), async (_req, res) => {
     const sessionId = crypto.randomUUID();
     const sessionDir = path.join(__dirname, 'temp_sessions', sessionId);
     fs.mkdirSync(sessionDir, { recursive: true });
@@ -55,8 +73,10 @@ app.post('/pair', async (_req, res) => {
             qr: null,
             ready: false,
             sessionData: null,
+            cleanupTimer: null,
         };
         sessions.set(sessionId, entry);
+        entry.cleanupTimer = setTimeout(() => removeSession(sessionId), PAIRING_SESSION_TTL_MS);
         sock.ev.on('creds.update', saveCreds);
 
         let resolveQr;
@@ -103,20 +123,18 @@ app.post('/pair', async (_req, res) => {
         const qr = await qrPromise;
         return res.json({ sessionId, qr });
     } catch (err) {
-        sessions.delete(sessionId);
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        return res.status(500).json({ error: 'Failed to generate QR code: ' + err.message });
+            removeSession(sessionId);
+            return res.status(500).json({ error: 'Failed to generate QR code: ' + err.message });
     }
 });
 
-app.get('/session/:sessionId', (req, res) => {
+app.get('/session/:sessionId', createPairingAccessMiddleware(), (req, res) => {
     const entry = sessions.get(req.params.sessionId);
     if (!entry) return res.status(404).json({ status: 'not_found' });
     if (!entry.ready) return res.json({ status: 'pending', qr: entry.qr });
 
     const sessionId = entry.sessionData;
-    fs.rmSync(entry.sessionDir, { recursive: true, force: true });
-    sessions.delete(req.params.sessionId);
+    removeSession(req.params.sessionId);
     return res.json({ status: 'ready', sessionId });
 });
 

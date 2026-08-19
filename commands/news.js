@@ -4,8 +4,16 @@ const getFakeVcard = require('../lib/fakeVcard');
 
 module.exports = async function (sock, chatId, message) {
     try {
-        const apiKey   = 'dcd720a6f1914e2d9dba9790c188c08c';
-        const response = await axios.get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`);
+        const apiKey = String(process.env.NEWS_API_KEY || '').trim();
+        if (!apiKey) {
+            await sock.sendMessage(chatId, { text: '❌ The news feature is not configured. Set NEWS_API_KEY to enable it.' });
+            return;
+        }
+
+        const response = await axios.get('https://newsapi.org/v2/top-headlines', {
+            params: { country: 'us', apiKey },
+            timeout: 10000,
+        });
         const articles = response.data.articles.slice(0, 5);
 
         let text = '📰 *Latest News*:\n\n';

@@ -35,8 +35,11 @@ async function stickerTelegramCommand(sock, chatId, msg) {
         // Get pack name from URL
         const packName = args[0].replace("https://t.me/addstickers/", "");
 
-        // Using working bot token
-        const botToken = '7801479976:AAGuPL0a7kXXBYz6XUSR_ll2SR5V_W6oHl4';
+        const botToken = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
+        if (!botToken) {
+            await sock.sendMessage(chatId, { text: '❌ The Telegram sticker feature is not configured. Set TELEGRAM_BOT_TOKEN to enable it.' });
+            return;
+        }
         
         try {
             // Fetch sticker pack info
@@ -183,4 +186,4 @@ async function stickerTelegramCommand(sock, chatId, msg) {
     }
 }
 
-module.exports = stickerTelegramCommand; 
+module.exports = stickerTelegramCommand;

@@ -8,6 +8,7 @@ const tagAllCommand = require('../commands/tagall');
 const { handleSsCommand } = require('../commands/ss');
 
 test('sudo user IDs normalize consistently across phone and WhatsApp JID formats', () => {
+    process.env.BOT_OWNER_NUMBER = '201060715493';
     assert.equal(normalizeUserId('+201060715493'), '201060715493');
     assert.equal(normalizeUserId('201060715493@s.whatsapp.net'), '201060715493');
     assert.equal(isSudoUser('201060715493@s.whatsapp.net'), true);

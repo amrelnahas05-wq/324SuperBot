@@ -28,17 +28,17 @@
 
 ## Session Pairing
 
-Generate Railway-compatible session variables to connect your WhatsApp account.
+Generate Railway-compatible session variables to connect your WhatsApp account. **Session data grants account access; never expose a pairing service or its output publicly.**
 
-You can run the included **self-hosted pairing server** from the `pairing/` folder:
+You can run the included **self-hosted pairing server** from the `pairing/` folder only on a private service. It is disabled by default. Configure a random private token that is at least 24 characters long before starting it:
 
 ```bash
 cd pairing
 npm install
-node index.js
+PAIRING_ENABLED=true PAIRING_API_TOKEN="replace-with-a-long-random-value" node index.js
 ```
 
-For Railway deployments, use the standalone pairing project at [qr-bot](https://github.com/amrelnahas05-wq/qr-bot). It supports both QR scanning and phone-number pairing, then displays the session variables needed by this bot.
+Enter the private token in the pairing page before generating a QR code. The pairing API and session download endpoints require the same bearer token, pairing sessions expire after five minutes, and responses are not cached. Do not put the token in a public frontend, public README, or repository secret.
 
 ### Railway session setup
 
@@ -88,8 +88,8 @@ Deploy 324-servant-Bot with one click:
 | **Command Handler** | Modular command system with support for custom plugins and events |
 | **Multi-Device** | Full multi-device support via Baileys |
 | **One-Click Deploy** | Deploy instantly on Heroku, Railway, Render, or Koyeb |
-| **Self-Hosted Pairing** | Built-in pairing server — generate SESSION_ID from your own fork |
-| **Customizable** | Easily configurable via `settings.js` and environment variables |
+| **Protected Pairing** | Built-in pairing service with an explicit enable flag, bearer-token access, short-lived session state, and no-store responses |
+| **Customizable** | Public display settings in `settings.js`; private configuration through environment variables |
 | **Clean Logging** | User-friendly logs and clear error messages |
 
 ---
@@ -98,7 +98,7 @@ Deploy 324-servant-Bot with one click:
 
 | Requirement | Version |
 |-------------|---------|
-| Node.js | >= 18.x |
+| Node.js | 20.x |
 | Git | Latest |
 | NPM | Latest |
 | WhatsApp | Active mobile account |
@@ -110,7 +110,7 @@ Deploy 324-servant-Bot with one click:
 ```bash
 git clone https://github.com/amrelnahas05-wq/324SuperBot.git
 cd 324SuperBot
-npm install
+npm ci
 ```
 
 Set all generated session variables in the `.env` file. For example:
@@ -119,6 +119,7 @@ Set all generated session variables in the `.env` file. For example:
 SESSION_ID_PARTS=2
 SESSION_ID_1="first_session_data_chunk"
 SESSION_ID_2="second_session_data_chunk"
+BOT_OWNER_NUMBER="your_number_with_country_code"
 VOICY_API_KEY="your_voicy_api_key"
 ```
 
@@ -132,13 +133,15 @@ npm start
 
 ## Configuration
 
-Edit `settings.js` to customize the bot:
+Set private configuration through your deployment variables or local `.env`; use [`.env.example`](.env.example) as the complete template. At minimum, `BOT_OWNER_NUMBER` is required to start the bot. Keep secrets—including all provider keys, `TELEGRAM_BOT_TOKEN`, `NEWS_API_KEY`, and `PAIRING_API_TOKEN`—out of `settings.js` and source control.
+
+Edit `settings.js` only to customize non-secret display behavior:
 
 | Setting | Description |
 |---------|-------------|
 | `botName` | Name of the bot |
-| `botOwner` | Owner display name |
-| `ownerNumber` | Your WhatsApp number (with country code) |
+| `botOwner` | Owner display name, with `BOT_OWNER_NAME` able to override it |
+| `ownerNumber` | Read from `BOT_OWNER_NUMBER` (with country code) |
 | `prefix` | Command prefix (default: `.`) |
 | `commandMode` | `public` or `private` |
 | `timezone` | Your timezone (e.g. `Africa/cairo`) |
