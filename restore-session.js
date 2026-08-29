@@ -88,11 +88,7 @@ try {
     if (!runtimeConfig.hasOwnerNumber) {
         console.warn('[restore-session] BOT_OWNER_NUMBER is unavailable; owner-only commands will remain disabled until it is configured.');
     }
-    if (alreadyHasSession()) {
-        console.log('[restore-session] ./session/creds.json already exists — using existing session, not touching it.');
-    } else {
-        restoreFromEnv();
-    }
+    console.log('[restore-session] Session restore from env is disabled — starting fresh (pair via QR/pairing code).');
 } catch (err) {
     console.error('[restore-session] Startup blocked:', err.message);
     process.exitCode = 1;
