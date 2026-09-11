@@ -42,9 +42,12 @@ Enter the private token in the pairing page before generating a QR code. The pai
 
 ### Railway session setup
 
-1. Pair your WhatsApp account with `qr-bot` and copy every displayed variable.
-2. In Railway, open this bot service, then select **Variables → Raw Editor**.
-3. Paste the copied variables, which look like this:
+The WhatsApp session tokens can be generated with the companion [`qr-bot`](https://github.com/amrelnahas05-wq/qr-bot) tool. Run `qr-bot` locally, generate a QR code, and scan it from the WhatsApp account that you want to connect to this bot. After pairing, `qr-bot` creates the `SESSION_ID_PARTS` and `SESSION_ID_N` variables required below. Treat these values like passwords because they contain WhatsApp authentication material.
+
+1. Run [`qr-bot`](https://github.com/amrelnahas05-wq/qr-bot) locally and pair your WhatsApp account.
+2. Copy every generated session variable from `qr-bot`.
+3. In Railway, open this bot service, then select **Variables → Raw Editor**.
+4. Paste the copied variables, which look like this:
 
    ```text
    SESSION_ID_PARTS=2
@@ -52,7 +55,7 @@ Enter the private token in the pairing page before generating a QR code. The pai
    SESSION_ID_2=<second session-data chunk>
    ```
 
-4. Save the variables and redeploy the bot service.
+5. Save the variables and redeploy the bot service.
 
 > Add every `SESSION_ID_N` variable exactly as generated. Railway cannot store the complete session archive in one environment-variable value.
 
