@@ -59,6 +59,8 @@ The WhatsApp session tokens can be generated with the companion [`qr-bot`](https
 
 > Add every `SESSION_ID_N` variable exactly as generated. Railway cannot store the complete session archive in one environment-variable value.
 
+The bot accepts large verified Baileys multi-file sessions, including archives with hundreds of key files. If `qr-bot` reports that it verified `creds.json` and the key files, copy the complete generated block without editing or reordering its values.
+
 ### Meme sounds with `.smeme`
 
 The `.smeme` command searches Voicy and sends a random matching sound as an MP3 audio message. Set the API key as a Railway variable or in your local `.env` file:

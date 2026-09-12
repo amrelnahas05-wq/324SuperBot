@@ -45,6 +45,22 @@ test('legacy session folders restore safely while extracting only the JSON filen
     fs.rmSync(target, { recursive: true, force: true });
 });
 
+test('large verified Baileys session archives with hundreds of key files are accepted', () => {
+    const zip = new AdmZip({ method: 8 });
+    zip.addFile('creds.json', Buffer.from('{"me":"safe"}', 'utf8'));
+    for (let index = 1; index <= 815; index += 1) {
+        zip.addFile(`app-state-sync-key-${index}.json`, Buffer.from(`{"key":${index}}`, 'utf8'));
+    }
+
+    const target = fs.mkdtempSync(path.join(os.tmpdir(), 'superbot-large-session-'));
+    const extracted = extractSessionArchive(zip.toBuffer(), target);
+
+    assert.equal(extracted.length, 816);
+    assert.equal(fs.readFileSync(path.join(target, 'creds.json'), 'utf8'), '{"me":"safe"}');
+    assert.equal(fs.readFileSync(path.join(target, 'app-state-sync-key-815.json'), 'utf8'), '{"key":815}');
+    fs.rmSync(target, { recursive: true, force: true });
+});
+
 test('runtime configuration requires a valid owner and a strong pairing token when pairing is enabled', () => {
     assert.deepEqual(validateRuntimeConfig({}), { ownerNumber: '', hasOwnerNumber: false });
     assert.throws(
